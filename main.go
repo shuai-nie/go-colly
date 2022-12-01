@@ -2,15 +2,24 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gocolly/colly"
+	"io/ioutil"
 	"log"
+	"math"
+	"net/http"
 	"net/url"
+	"os"
 	"time"
 )
 
-func main(){
+func main() {
+	dd := largestPalindrome(1)
+	fmt.Println(dd)
+	os.Exit(1)
+
 	urlstr := "https://news.baidu.com"
 	u, err := url.Parse(urlstr)
 	if err != nil {
@@ -38,7 +47,7 @@ func main(){
 		fmt.Println("title:", e.Text)
 	})
 
-	c.OnResponse(func(resp *colly.Response){
+	c.OnResponse(func(resp *colly.Response) {
 		fmt.Println("response received", resp.StatusCode)
 
 		htmlDoc, err := goquery.NewDocumentFromReader(bytes.NewReader(resp.Body))
@@ -60,5 +69,53 @@ func main(){
 	})
 
 	err = c.Visit(urlstr)
-	
+
+}
+
+var Client http.Client
+
+type Result struct{}
+
+func Spider(url string, i int) {
+	reqSpider, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	reqSpider.Header.Set("", "")
+	reqSpider.Header.Set("", "")
+	reqSpider.Header.Set("", "")
+	respSpider, err := Client.Do(reqSpider) //Client.Do(reqSpider)
+	if err != nil {
+		log.Fatal(err)
+	}
+	bodyTest, _ := ioutil.ReadAll(respSpider.Body)
+	var result Result
+	_ = json.Unmarshal(bodyTest, &result)
+	fmt.Println(i, result)
+
+}
+
+// 最大回文数乘积
+// 输入：n = 2 输出：987
+// 解释：99 x 91 = 9009, 9009 % 1337 = 987
+func largestPalindrome(n int) int {
+	if n == 1 {
+		return 9
+	}
+
+	key := int(math.Pow10(n)) - 1
+	for num := key; num > 0; num-- {
+		t := num
+		for side := t; side > 0; side /= 10 {
+			t = t*10 + side%10
+		}
+
+		for test := key; test*test > t; test-- {
+			if t/test <= key && t%test == 0 {
+				return t % 1337
+			}
+		}
+	}
+	return 0
 }
